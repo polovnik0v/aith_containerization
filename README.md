@@ -1,7 +1,6 @@
 # ЛР 1. Dockerfile на примере Apache Airflow
 
-Ниже — два Dockerfile: `Dockerfile.bad` демонстрирует плохие практики, `Dockerfile.good` исправляет их. Пример использует базовый образ Apache Airflow и простейший DAG (`dags/example_dag.py`). Обязательно монтируем тома для DAG-ов и логов при запуске.
-
+Ниже — два Dockerfile: `Dockerfile.bad` демонстрирует плохие практики, `Dockerfile.good` исправляет их. Пример использует базовый образ Apache Airflow и простейший DAG (`dags/example_dag.py`). 
 ## Плохие практики (в `Dockerfile.bad`)
 - `FROM apache/airflow:latest` — непредсказуемые обновления, невозможность воспроизводимости
 - `USER root` Работа только под root -> нарушает безопасность контейнера
