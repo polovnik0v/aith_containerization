@@ -7,13 +7,16 @@ USER root
 # Переменные окружения Airflow
 ENV AIRFLOW__CORE__LOAD_EXAMPLES=False \
     AIRFLOW__CORE__EXECUTOR=SequentialExecutor  \
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/data/airflow.db
 
 # Копируем ваши DAG-и
 COPY dags/ /opt/airflow/dags/
 
+# Создаем директорию для БД и даем права
+RUN mkdir -p /opt/airflow/data && chown -R airflow:root /opt/airflow/data
+
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod 755 /entrypoint.sh
+RUN chmod 755 /entrypoint.sh && chown airflow:root /entrypoint.sh
 
 # Переходим под пользователем airflow (он уже создан в базовом образе)
 USER airflow
@@ -24,4 +27,4 @@ RUN pip install --no-cache-dir -r /requirements.txt
 
 # Команда по умолчанию – запуск webserver
 # Можно переопределить на scheduler/worker через docker-compose или kubernetes
-ENTRYPOINT ["/entrypoint.sh"]
+# ENTRYPOINT устанавливается в docker-compose.yml

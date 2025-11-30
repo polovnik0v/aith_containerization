@@ -1,18 +1,123 @@
-# ЛР 1. Dockerfile на примере Apache Airflow
+# ЛР 2. Docker Compose на примере Apache Airflow
 
-Ниже — два Dockerfile: `Dockerfile.bad` демонстрирует плохие практики, `Dockerfile.good` исправляет их. Пример использует базовый образ Apache Airflow и простейший DAG (`dags/example_dag.py`). 
-## Плохие практики (в `Dockerfile.bad`)
-- `FROM apache/airflow:latest` — непредсказуемые обновления, невозможность воспроизводимости
-- `USER root` Работа только под root -> нарушает безопасность контейнера
-- `RUN apt-get update && apt-get install -y ... && pip install ...` монолитный RUN -> тяжёлый слой, нечитаемость 
-- `COPY . /aith_containers` копирование всего проекта -> любое изменение любого файла полностью инвалидирует кеш
+## Описание docker-compose.yml
 
-## Как исправлено (в `Dockerfile.good`)
-- Пинованный образ `apache/airflow:2.10.1-python3.11` для повторяемых билдов
-- Возврат к пользователю `airflow` после установки; включены тома для `dags` и `logs` для сохранения данных.
-- Зависимости вынесены в `requirements.txt` с фиксированными версиями; устанавливаем с `--no-cache-dir`.
-- Копируем только `dags/`, остальное не попадает в образ
+Проект состоит из трех сервисов, работающих в единой сети `airflow-lab2-network`:
 
-## Две плохие практики при использовании контейнера
-- Запускать контейнер с `--privileged`/без ограничений ресурсов (CPU/memory) → рост риска и невозможность контролировать потребление.
-- Хранить секреты (пароли, токены) в образе или в `.env`, лежащем в репозитории; используйте секреты Docker/CI или переменные окружения вне Git.
+### 1. `airflow-init` (Init сервис)
+- **Назначение**: Одноразовая инициализация базы данных Airflow
+- **Контейнер**: `airflow-init-container`
+- **Команда**: Инициализирует БД и создает административного пользователя
+- **Restart**: `no`
+- **Volumes**: 
+  - `airflow-db-volume` - для хранения SQLite БД
+  - `./dags` - монтирование DAG файлов
+  - `./logs` - логи Airflow
+
+### 2. `airflow-webserver` (App сервис)
+- **Назначение**: Веб-интерфейс Airflow
+- **Контейнер**: `airflow-webserver-container`
+- **Образ**: `airflow-lab2:latest` (собирается из `Dockerfile.good`)
+- **Порт**: `8080` (через `AIRFLOW_WEBSERVER_PORT` из `.env`)
+- **Command**: `airflow webserver`
+- **Depends_on**: `airflow-init` (condition: service_completed_successfully)
+- **Healthcheck**: Проверяет доступность через curl
+- **Volumes**: `airflow-db-volume`, `./dags`, `./logs`
+
+### 3. `airflow-scheduler` (App сервис)
+- **Назначение**: Планировщик задач Airflow
+- **Контейнер**: `airflow-scheduler-container`
+- **Образ**: `airflow-lab2:latest`
+- **Command**: `airflow scheduler`
+- **Depends_on**: 
+  - `airflow-init` (condition: service_completed_successfully)
+  - `airflow-webserver` (condition: service_healthy)
+- **Healthcheck**: Проверяет наличие процесса scheduler
+- **Volumes**: `airflow-db-volume`, `./dags`, `./logs`
+
+## Особенности реализации
+
+✅ Автоматическая сборка образа из `Dockerfile.good`  
+✅ Жесткое именование контейнеров  
+✅ `depends_on` с условиями  
+✅ Volumes (именованные тома и bind mounts)  
+✅ Прокидывание порта наружу (8080)  
+✅ `command` для каждого сервиса  
+✅ `healthcheck` для webserver и scheduler  
+✅ Переменные окружения в `.env` файле  
+✅ Явная сеть `airflow-lab2-network`
+
+## Запуск
+
+```bash
+docker-compose up -d
+```
+
+Airflow доступен по адресу: http://localhost:8080  
+Логин: `admin` / Пароль: `admin`
+
+## Остановка
+
+```bash
+docker-compose down
+```
+
+Полная очистка с удалением volumes:
+```bash
+docker-compose down -v
+```
+
+## Ответы на вопросы
+
+### 1. Можно ли ограничивать ресурсы (память или CPU) для сервисов в docker-compose.yml?
+
+**Да, можно.** В docker-compose.yml можно ограничивать ресурсы через секцию `deploy.resources`:
+
+```yaml
+services:
+  airflow-webserver:
+    # ... другие настройки
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'      # Максимум 1 CPU
+          memory: 512M      # Максимум 512 МБ памяти
+        reservations:
+          cpus: '0.5'      # Минимум 0.5 CPU
+          memory: 256M     # Минимум 256 МБ памяти
+```
+
+**Важно:** Секция `deploy` работает только в режиме Swarm (docker stack deploy). Для обычного `docker-compose up` нужно использовать:
+
+```yaml
+services:
+  airflow-webserver:
+    # ... другие настройки
+    mem_limit: 512m        # Лимит памяти
+    cpus: 1.0              # Лимит CPU
+```
+
+Или через `mem_limit` и `cpu_count` (устаревший способ, но работает).
+
+**Зачем ограничивать ресурсы:**
+- Предотвращение перегрузки хоста
+- Гарантия доступности ресурсов для других сервисов
+- Контроль потребления ресурсов
+
+### 2. Как можно запустить только определенный сервис из docker-compose.yml?
+
+**Способ 1:** Указать имя сервиса при запуске:
+
+```bash
+docker-compose up -d airflow-webserver
+```
+
+Это запустит только `airflow-webserver` и все его зависимости (согласно `depends_on`).
+
+**Способ 2:** Использовать `--no-deps` для запуска без зависимостей:
+
+```bash
+docker-compose up -d --no-deps airflow-scheduler
+```
+
+Это запустит только `airflow-scheduler`, игнорируя зависимости.
