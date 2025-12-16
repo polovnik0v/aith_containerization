@@ -122,6 +122,7 @@ curl <YOUR_MINIKUBE_URL>/stats
 - Пример результатов
 <img width="910" height="368" alt="image" src="https://github.com/user-attachments/assets/e92d03de-cb62-43a2-8080-c435ae8a89e1" />
 <img width="901" height="198" alt="image" src="https://github.com/user-attachments/assets/252ac48b-a05e-4ea7-8410-23ff90cf458a" />
+
 - Ручки в сваггере
 <img width="1526" height="336" alt="image" src="https://github.com/user-attachments/assets/98a6914e-7b23-4ff1-9163-595faa565bd3" />
 
