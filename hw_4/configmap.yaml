@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-api-configmap
+  labels:
+    app: demo-api
+    lab: hw4
+data:
+  APP_MESSAGE: "Welcome to Demo API Service!"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+
