@@ -1,4 +1,9 @@
 # ЛР 4. Развертывание собственного сервиса в Kubernetes
+- Запуск minicube
+<img width="962" height="468" alt="image" src="https://github.com/user-attachments/assets/ddfcff40-2a47-4e4d-9add-a77a206aa8e2" />
+- Проверка
+<img width="841" height="309" alt="image" src="https://github.com/user-attachments/assets/ad456e5a-f773-47f6-96aa-9a8c9a4abd5c" />
+<img width="780" height="135" alt="image" src="https://github.com/user-attachments/assets/c83ca088-2e71-44aa-bdfe-84da90e68932" />
 
 ## Описание
 
