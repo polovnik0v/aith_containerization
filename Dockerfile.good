@@ -2,6 +2,7 @@
 # Версию можно зафиксировать, например 2.10.1 с Python 3.11
 FROM apache/airflow:2.10.1-python3.11
 
+# Юзер root для установки системных зависимостей
 USER root
 
 # Переменные окружения Airflow
@@ -9,19 +10,18 @@ ENV AIRFLOW__CORE__LOAD_EXAMPLES=False \
     AIRFLOW__CORE__EXECUTOR=SequentialExecutor  \
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
 
-# Копируем ваши DAG-и
-COPY dags/ /opt/airflow/dags/
-
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod 755 /entrypoint.sh
-
-# Переходим под пользователем airflow (он уже создан в базовом образе)
+# Возврат к пользователю airflow
 USER airflow
 
-# Сначала копируем requirements.txt в образ
-COPY requirements.txt /requirements.txt
-RUN pip install --no-cache-dir -r /requirements.txt
+# Оптимизация слоев. Сначала зависимости, далее даги
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Команда по умолчанию – запуск webserver
-# Можно переопределить на scheduler/worker через docker-compose или kubernetes
-ENTRYPOINT ["/entrypoint.sh"]
+COPY dags/ /opt/airflow/dags/
+
+# volume для дагов, логов и метаданных БД
+VOLUME ["/opt/airflow", "/opt/airflow/dags"]
+
+# Стандартная точка входа Airflow
+ENTRYPOINT ["/usr/bin/dumb-init", "--", "/entrypoint"]
+CMD ["standalone"]
