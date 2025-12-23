@@ -11,12 +11,8 @@ services:
       airflow db init &&
       airflow users create --username ${AIRFLOW_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${AIRFLOW_PASSWORD} || true
       "
-    environment:
-      - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
-      - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
-      - AIRFLOW_USERNAME=${AIRFLOW_USERNAME}
-      - AIRFLOW_PASSWORD=${AIRFLOW_PASSWORD}
+    env_file:
+      - .env
     volumes:
       - airflow-db-volume:/opt/airflow/data
       - ./dags:/opt/airflow/dags
@@ -35,12 +31,8 @@ services:
     command: airflow webserver
     ports:
       - "${AIRFLOW_WEBSERVER_PORT}:8080"
-    environment:
-      - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
-      - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
-      - AIRFLOW_USERNAME=${AIRFLOW_USERNAME}
-      - AIRFLOW_PASSWORD=${AIRFLOW_PASSWORD}
+    env_file:
+      - .env
     volumes:
       - airflow-db-volume:/opt/airflow/data
       - ./dags:/opt/airflow/dags
@@ -66,12 +58,8 @@ services:
     image: airflow-lab2:latest
     container_name: airflow-scheduler-container
     command: airflow scheduler
-    environment:
-      - AIRFLOW__CORE__LOAD_EXAMPLES=${AIRFLOW__CORE__LOAD_EXAMPLES}
-      - AIRFLOW__CORE__EXECUTOR=${AIRFLOW__CORE__EXECUTOR}
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
-      - AIRFLOW_USERNAME=${AIRFLOW_USERNAME}
-      - AIRFLOW_PASSWORD=${AIRFLOW_PASSWORD}
+    env_file:
+      - .env
     volumes:
       - airflow-db-volume:/opt/airflow/data
       - ./dags:/opt/airflow/dags
